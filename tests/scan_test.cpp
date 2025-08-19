@@ -15,6 +15,13 @@ TEST(ScanTest, WrongFormatSpecifier) {
     EXPECT_FALSE(result);
 }
 
+TEST(ScanTest, CStringTypeTest) {
+    const char* s = "lovely string";
+    auto result = stdx::scan<const char*>(s, "{%s}");
+    EXPECT_TRUE(result);
+    EXPECT_TRUE(std::get<0>(result.value().result) == s);
+}
+
 TEST(ScanTest, StringSpecifierTest) {
     auto result = stdx::scan<std::string>("lovely string", "{%s}");
     EXPECT_TRUE(result);
@@ -28,37 +35,37 @@ TEST(ScanTest, DoubleStringSpecifierTest) {
 TEST(ScanTest, ParseSingleString_EmptySpecifier) {
     auto result = stdx::scan<std::string>("hello world", "{}");
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(std::get<0>(result->values()), "hello world");
+    EXPECT_EQ(std::get<0>(result.value().result), "hello world");
 }
 
 TEST(ScanTest, ParseSingleInt_EmptySpecifier) {
     auto result = stdx::scan<int>("42", "{}");
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(std::get<0>(result->values()), 42);
+    EXPECT_EQ(std::get<0>(result.value().result), 42);
 }
 
 TEST(ScanTest, ParseSingleInt_D_Specifier) {
     auto result = stdx::scan<int>("-123", "{%d}");
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(std::get<0>(result->values()), -123);
+    EXPECT_EQ(std::get<0>(result.value().result), -123);
 }
 
 TEST(ScanTest, ParseSingleUnsignedInt_U_Specifier) {
     auto result = stdx::scan<unsigned int>("456", "{%u}");
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(std::get<0>(result->values()), 456u);
+    EXPECT_EQ(std::get<0>(result.value().result), 456u);
 }
 
 TEST(ScanTest, ParseSingleDouble_F_Specifier) {
     auto result = stdx::scan<double>("3.14159", "{%f}");
     ASSERT_TRUE(result.has_value());
-    EXPECT_DOUBLE_EQ(std::get<0>(result->values()), 3.14159);
+    EXPECT_DOUBLE_EQ(std::get<0>(result.value().result), 3.14159);
 }
 
 TEST(ScanTest, ParseSingleString_S_Specifier) {
     auto result = stdx::scan<std::string>("test_string", "{%s}");
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(std::get<0>(result->values()), "test_string");
+    EXPECT_EQ(std::get<0>(result.value().result), "test_string");
 }
 
 // --- Multiple Type Tests ---
@@ -66,23 +73,23 @@ TEST(ScanTest, ParseSingleString_S_Specifier) {
 TEST(ScanTest, ParseMultipleTypes_MixedSpecifiers) {
     auto result = stdx::scan<int, std::string, double>("100 hello 2.5", "{%d} {%s} {%f}");
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(std::get<0>(result->values()), 100);
-    EXPECT_EQ(std::get<1>(result->values()), "hello");
-    EXPECT_DOUBLE_EQ(std::get<2>(result->values()), 2.5);
+    EXPECT_EQ(std::get<0>(result.value().result), 100);
+    EXPECT_EQ(std::get<1>(result.value().result), "hello");
+    EXPECT_DOUBLE_EQ(std::get<2>(result.value().result), 2.5);
 }
 
 TEST(ScanTest, ParseMultipleTypes_EmptyAndSpecified) {
     auto result = stdx::scan<std::string, int>("start 99", "{} {%d}");
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(std::get<0>(result->values()), "start");
-    EXPECT_EQ(std::get<1>(result->values()), 99);
+    EXPECT_EQ(std::get<0>(result.value().result), "start");
+    EXPECT_EQ(std::get<1>(result.value().result), 99);
 }
 
 TEST(ScanTest, ParseMultipleStrings_EmptySpecifiers) {
     auto result = stdx::scan<std::string, std::string>("word1 word2", "{} {}");
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(std::get<0>(result->values()), "word1");
-    EXPECT_EQ(std::get<1>(result->values()), "word2");
+    EXPECT_EQ(std::get<0>(result.value().result), "word1");
+    EXPECT_EQ(std::get<1>(result.value().result), "word2");
 }
 
 // --- Format and Input Matching Tests ---
@@ -90,14 +97,14 @@ TEST(ScanTest, ParseMultipleStrings_EmptySpecifiers) {
 TEST(ScanTest, ParseWithLiteralText) {
     auto result = stdx::scan<int, std::string>("ID: 123 Name: Smith", "ID: {%d} Name: {%s}");
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(std::get<0>(result->values()), 123);
-    EXPECT_EQ(std::get<1>(result->values()), "Smith");
+    EXPECT_EQ(std::get<0>(result.value().result), 123);
+    EXPECT_EQ(std::get<1>(result.value().result), "Smith");
 }
 
 TEST(ScanTest, ParseWithLeadingAndTrailingText) {
     auto result = stdx::scan<int>("[Value=50]", "[Value={%d}]");
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(std::get<0>(result->values()), 50);
+    EXPECT_EQ(std::get<0>(result.value().result), 50);
 }
 
 // --- Error Handling Tests ---
@@ -116,7 +123,7 @@ TEST(ScanTest, FailMismatchedSpecifierCount) {
 }
 
 TEST(ScanTest, FailInvalidFormat_UnmatchedBrace) {
-    auto result = stdx::scan<int>("100", "{%d");  // Не хватает закрывающей placeholder.
+    auto result = stdx::scan<int>("100", "{%d");  // РќРµ С…РІР°С‚Р°РµС‚ Р·Р°РєСЂС‹РІР°СЋС‰РµР№ placeholder.
     EXPECT_FALSE(result.has_value()) << "Scan should fail due to invalid format";
     EXPECT_NE(result.error().message.find("Unformatted text in input and format string are different"),
               std::string::npos);
@@ -124,7 +131,7 @@ TEST(ScanTest, FailInvalidFormat_UnmatchedBrace) {
 
 TEST(ScanTest, FailLiteralTextMismatch) {
     auto result =
-        stdx::scan<int>("ID 123", "ID: {%d}");  // Форматная строка ожидает 'ID: ', а строка ввода имеет вид 'ID '
+        stdx::scan<int>("ID 123", "ID: {%d}");  // Р¤РѕСЂРјР°С‚РЅР°СЏ СЃС‚СЂРѕРєР° РѕР¶РёРґР°РµС‚ 'ID: ', Р° СЃС‚СЂРѕРєР° РІРІРѕРґР° РёРјРµРµС‚ РІРёРґ 'ID '
     EXPECT_FALSE(result.has_value()) << "Scan should fail due to literal text mismatch";
     EXPECT_NE(result.error().message.find("Unformatted text in input and format string are different"),
               std::string::npos);

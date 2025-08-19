@@ -56,7 +56,7 @@ template<typename T> constexpr std::expected<T, scan_error> process_empty_placeh
         // Поддержка std::string, std::string_view, const std::string и т.д.
         return T {input};
     }
-    else if constexpr(isIntegral<T>) {
+    else if constexpr(is_integral<T>) {
         auto int_res = parse_integral(input);
         if(!int_res) {
             return std::unexpected(
@@ -91,7 +91,7 @@ template<typename T> constexpr std::expected<T, scan_error> process_empty_placeh
         // В этой точке тип T не будет "обрезан".
         return static_cast<T>(parsed_int);
     }
-    else if constexpr(isFloating<T>) {
+    else if constexpr(is_floating<T>) {
         auto float_res = parse_floating(input);
         if(!float_res) {
             return std::unexpected(
@@ -100,7 +100,7 @@ template<typename T> constexpr std::expected<T, scan_error> process_empty_placeh
         double parsed_double = float_res.value();
 
         // Проверка на "обрезку", если double кастуется к float (T = float, value at {%f} = double).
-        if constexpr(std::is_same_v<std::remove_cv_t<T>, float>) {
+        if constexpr(std::same_as<std::remove_cv_t<T>, float>) {
             constexpr auto float_max = static_cast<double>(std::numeric_limits<T>::max());
             constexpr auto float_min = static_cast<double>(std::numeric_limits<T>::lowest());
             if(parsed_double < float_min || parsed_double > float_max) {
@@ -129,10 +129,10 @@ constexpr std::expected<T, scan_error> parse_value_with_format(std::string_view 
         // Обработка спецификаторов формата.
         switch(static_cast<unsigned char>(fmt[1])) {
             case 's': {
-                if constexpr(isCString<T>) {
-                    return std::string {input};
+                if constexpr(is_c_string<T>) {
+                    return reinterpret_cast<const char*>(input.data());
                 }
-                if constexpr(isString<T> || isStringView<T>) {
+                if constexpr(is_string<T> || is_string_view<T>) {
                     return parse_string(input);
                 }
                 else {
@@ -141,7 +141,7 @@ constexpr std::expected<T, scan_error> parse_value_with_format(std::string_view 
                 }
             }
             case 'd': {
-                if constexpr(isIntegral<T>) {
+                if constexpr(is_integral<T>) {
                     auto res = parse_integral(input);
                     if(!res) {
                         return std::unexpected(scan_error("Unexpected result."s + res.error().what()));
@@ -154,7 +154,7 @@ constexpr std::expected<T, scan_error> parse_value_with_format(std::string_view 
                 }
             }
             case 'u': {
-                if constexpr(isNatural<T>) {
+                if constexpr(is_natural<T>) {
                     auto res = parse_natural(input);
                     if(!res) {
                         return std::unexpected(
@@ -177,7 +177,7 @@ constexpr std::expected<T, scan_error> parse_value_with_format(std::string_view 
                 }
             }
             case 'f': {
-                if constexpr(isFloating<T>) {
+                if constexpr(is_floating<T>) {
                     auto res = parse_floating(input);
                     ;
                     if(!res) {
