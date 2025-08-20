@@ -64,34 +64,6 @@ template<typename T> constexpr std::expected<T, scan_error> process_empty_placeh
                 scan_error("Unexpected result. Failed to parse integer for {}: "s + int_res.error().what()));
         }
         return int_res.value();
-        /*auto parsed_int = int_res.value();
-
-        if constexpr(std::is_signed_v<std::remove_cv_t<T>>) {
-            // Проверка на "обрезку" значений малоразмерных знаковых int.
-            if constexpr(sizeof(T) < sizeof(int)) {
-                // Значение должно укладываться в допустимый диапазон типа.
-                if(parsed_int < static_cast<long long>(std::numeric_limits<T>::min()) ||
-                   parsed_int > static_cast<long long>(std::numeric_limits<T>::max())) {
-                    return std::unexpected(scan_error("Unexpected result. Integer out of range for target type {}."s));
-                }
-            }
-        }
-        else {  // Проверка беззнакового int.
-            // Беззнаковый тип не может быть отрицатлеьным.
-            if(parsed_int < 0) {
-                return std::unexpected(scan_error("Unexpected result. Negative value parsed for unsigned type {}."s));
-            }
-            if constexpr(sizeof(T) < sizeof(int)) {  // Для uint8_t, uint16_t, uint32_t ...
-                // Значение должно укладываться в допустимый диапазон типа.
-                if(static_cast<unsigned long long>(parsed_int) >
-                   static_cast<unsigned long long>(std::numeric_limits<T>::max())) {
-                    return std::unexpected(
-                        scan_error("Unexpected result. Unsigned integer out of range for target type {}."s));
-                }
-            }
-        }
-        // В этой точке тип T не будет "обрезан".
-        return static_cast<T>(parsed_int);*/
     }
     else if constexpr(is_natural<T>) {
         auto natural_res = parse_value<unsigned long long>(input);
@@ -108,19 +80,6 @@ template<typename T> constexpr std::expected<T, scan_error> process_empty_placeh
                 scan_error("Unexpected result. Failed to parse float for {}: "s + floating_res.error().what()));
         }
         return floating_res.value();
-        /*double parsed_double = floating_res.value();
-
-        // Проверка на "обрезку", если double кастуется к float (T = float, value at {%f} = double).
-        if constexpr(std::same_as<std::remove_cv_t<T>, float>) {
-            constexpr auto float_max = static_cast<double>(std::numeric_limits<T>::max());
-            constexpr auto float_min = static_cast<double>(std::numeric_limits<T>::lowest());
-            if(parsed_double < float_min || parsed_double > float_max) {
-                return std::unexpected(
-                    scan_error("Unexpected result. Double value out of range for float target type {}."s));
-            }
-        }
-        // В этой точке тип T не будет "обрезан".
-        return static_cast<T>(parsed_double);*/
     }
     else {
         return std::unexpected(scan_error("Unexpected result. Type not supported for {} placeholder."s));
