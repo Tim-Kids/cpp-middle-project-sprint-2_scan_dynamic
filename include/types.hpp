@@ -7,7 +7,7 @@ template<typename... T>
 concept is_integral = ((std::integral<std::remove_cv_t<T>>) && ...);
 
 template<typename... T>
-concept is_natural = ((std::integral<std::remove_cv_t<T>> && std::is_unsigned_v<std::remove_cv_t<T>>) && ...);
+concept is_natural = ((std::integral<std::remove_cv_t<T>> && std::unsigned_integral<std::remove_cv_t<T>>) && ...);
 
 template<typename... T>
 concept is_floating = ((std::floating_point<std::remove_cv_t<T>>) && ...);
