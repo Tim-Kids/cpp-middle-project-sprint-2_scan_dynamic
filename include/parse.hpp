@@ -53,7 +53,8 @@ template<typename T> constexpr std::expected<T, scan_error> process_empty_placeh
             return std::unexpected(
                 scan_error("Unexpected result. Failed to parse integer for {}: "s + int_res.error().what()));
         }
-        auto parsed_int = int_res.value();
+        return int_res.value();
+        /*auto parsed_int = int_res.value();
 
         if constexpr(std::is_signed_v<std::remove_cv_t<T>>) {
             // Проверка на "обрезку" значений малоразмерных знаковых int.
@@ -80,15 +81,24 @@ template<typename T> constexpr std::expected<T, scan_error> process_empty_placeh
             }
         }
         // В этой точке тип T не будет "обрезан".
-        return static_cast<T>(parsed_int);
+        return static_cast<T>(parsed_int);*/
+    }
+    else if constexpr(is_natural<T>) {
+        auto natural_res = parse_value<unsigned long long>(input);
+        if(!natural_res) {
+            return std::unexpected(
+                scan_error("Unexpected result. Failed to parse unsigned long long for {}: "s + natural_res.error().what()));
+        }
+        return natural_res.value();
     }
     else if constexpr(is_floating<T>) {
-        auto float_res = parse_value<double>(input);
-        if(!float_res) {
+        auto floating_res = parse_value<double>(input);
+        if(!floating_res) {
             return std::unexpected(
-                scan_error("Unexpected result. Failed to parse float for {}: "s + float_res.error().what()));
+                scan_error("Unexpected result. Failed to parse float for {}: "s + floating_res.error().what()));
         }
-        double parsed_double = float_res.value();
+        return floating_res.value();
+        /*double parsed_double = floating_res.value();
 
         // Проверка на "обрезку", если double кастуется к float (T = float, value at {%f} = double).
         if constexpr(std::same_as<std::remove_cv_t<T>, float>) {
@@ -100,7 +110,7 @@ template<typename T> constexpr std::expected<T, scan_error> process_empty_placeh
             }
         }
         // В этой точке тип T не будет "обрезан".
-        return static_cast<T>(parsed_double);
+        return static_cast<T>(parsed_double);*/
     }
     else {
         return std::unexpected(scan_error("Unexpected result. Type not supported for {} placeholder."s));
