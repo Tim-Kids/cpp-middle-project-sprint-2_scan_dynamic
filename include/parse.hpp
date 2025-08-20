@@ -14,7 +14,17 @@ namespace stdx::details {
 
 using namespace std::literals;
 
-// Семейсвто функций parse_value.
+// Функция-хелпер для конверсии строки в число.
+template <typename T>
+constexpr auto from_chars(const char* first, const char* last, T& value) {
+    return std::from_chars(first, last, value);
+}
+
+// Перегрузка для double.
+template <>
+constexpr auto from_chars<double>(const char* first, const char* last, double& value) {
+    return std::from_chars(first, last, value, std::chars_format::general);
+}
 
 // Поддержка целых чисел, чисел с плавающей точкой и натуральных чисел. Спецификаторы d,u,f.
 template<typename T>
@@ -23,7 +33,7 @@ concept is_parsable = std::same_as<T, int> || std::same_as<T, double> || std::sa
 template<is_parsable T>
 constexpr std::expected<T, std::format_error> parse_value(std::string_view view) {
     T result {};
-    auto [ptr, ec] = std::from_chars(view.data(), view.data() + view.size(), result);
+    auto [ptr, ec] = from_chars<T>(view.data(), view.data() + view.size(), result);
 
     if (ec != std::errc()) {
         if constexpr (std::same_as<T, int>) {
