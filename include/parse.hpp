@@ -16,6 +16,27 @@ using namespace std::literals;
 
 // Семейсвто функций parse_value.
 
+// Поддержка целых чисел, чисел с плавающей точкой и натуральных чисел. Спецификаторы d,u,f.
+template<typename T>
+concept is_parsable = std::same_as<T, int> || std::same_as<T, double> || std::same_as<T, unsigned long long>;
+
+template<is_parsable T>
+constexpr std::expected<T, std::format_error> parse_value(std::string_view view) {
+    T result {};
+    auto [ptr, ec] = std::from_chars(view.data(), view.data() + view.size(), result);
+
+    if (ec != std::errc()) {
+        if constexpr (std::same_as<T, int>) {
+            return std::unexpected(std::format_error("Failed to convert into <int>."));
+        } else if constexpr (std::same_as<T, double>) {
+            return std::unexpected(std::format_error("Failed to convert into <double>."));
+        } else if constexpr (std::same_as<T, unsigned long long>) {
+            return std::unexpected(std::format_error("Failed to convert into <unsigned long long>."));
+        }
+    }
+    return result;
+}
+
 // Поддержка спецификатора d: в исходной строке на месте плейсхолдера находится целое число.
 constexpr std::expected<int, std::format_error> parse_integral(std::string_view view) {
     int result     = 0;
@@ -142,7 +163,7 @@ constexpr std::expected<T, scan_error> parse_value_with_format(std::string_view 
             }
             case 'd': {
                 if constexpr(is_integral<T>) {
-                    auto res = parse_integral(input);
+                    auto res = parse_value<int>(input);
                     if(!res) {
                         return std::unexpected(scan_error("Unexpected result."s + res.error().what()));
                     }
@@ -155,7 +176,7 @@ constexpr std::expected<T, scan_error> parse_value_with_format(std::string_view 
             }
             case 'u': {
                 if constexpr(is_natural<T>) {
-                    auto res = parse_natural(input);
+                    auto res = parse_value<unsigned long long>(input);
                     if(!res) {
                         return std::unexpected(
                             scan_error("Unexpected result. Failed to parse natural for %u: "s + res.error().what()));
@@ -178,7 +199,7 @@ constexpr std::expected<T, scan_error> parse_value_with_format(std::string_view 
             }
             case 'f': {
                 if constexpr(is_floating<T>) {
-                    auto res = parse_floating(input);
+                    auto res = parse_value<double>(input);
                     ;
                     if(!res) {
                         return std::unexpected(scan_error("Unexpected result. "s + res.error().what()));
