@@ -15,14 +15,12 @@ namespace stdx::details {
 using namespace std::literals;
 
 // Функция-хелпер для конверсии строки в число.
-template <typename T>
-constexpr auto from_chars(const char* first, const char* last, T& value) {
+template<typename T> constexpr auto from_chars(const char* first, const char* last, T& value) {
     return std::from_chars(first, last, value);
 }
 
 // Перегрузка для double.
-template <>
-constexpr auto from_chars<double>(const char* first, const char* last, double& value) {
+template<> constexpr auto from_chars<double>(const char* first, const char* last, double& value) {
     return std::from_chars(first, last, value, std::chars_format::general);
 }
 
@@ -30,17 +28,18 @@ constexpr auto from_chars<double>(const char* first, const char* last, double& v
 template<typename T>
 concept is_parsable = std::same_as<T, int> || std::same_as<T, double> || std::same_as<T, unsigned long long>;
 
-template<is_parsable T>
-constexpr std::expected<T, std::format_error> parse_value(std::string_view view) {
+template<is_parsable T> constexpr std::expected<T, std::format_error> parse_value(std::string_view view) {
     T result {};
     auto [ptr, ec] = from_chars<T>(view.data(), view.data() + view.size(), result);
 
-    if (ec != std::errc()) {
-        if constexpr (std::same_as<T, int>) {
+    if(ec != std::errc()) {
+        if constexpr(std::same_as<T, int>) {
             return std::unexpected(std::format_error("Failed to convert into <int>."));
-        } else if constexpr (std::same_as<T, double>) {
+        }
+        else if constexpr(std::same_as<T, double>) {
             return std::unexpected(std::format_error("Failed to convert into <double>."));
-        } else if constexpr (std::same_as<T, unsigned long long>) {
+        }
+        else if constexpr(std::same_as<T, unsigned long long>) {
             return std::unexpected(std::format_error("Failed to convert into <unsigned long long>."));
         }
     }
@@ -68,8 +67,8 @@ template<typename T> constexpr std::expected<T, scan_error> process_empty_placeh
     else if constexpr(is_natural<T>) {
         auto natural_res = parse_value<unsigned long long>(input);
         if(!natural_res) {
-            return std::unexpected(
-                scan_error("Unexpected result. Failed to parse unsigned long long for {}: "s + natural_res.error().what()));
+            return std::unexpected(scan_error("Unexpected result. Failed to parse unsigned long long for {}: "s +
+                                              natural_res.error().what()));
         }
         return natural_res.value();
     }

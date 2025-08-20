@@ -17,7 +17,7 @@ TEST(ScanTest, WrongFormatSpecifier) {
 
 TEST(ScanTest, CStringTypeTest) {
     const char* s = "lovely string";
-    auto result = stdx::scan<const char*>(s, "{%s}");
+    auto result   = stdx::scan<const char*>(s, "{%s}");
     EXPECT_TRUE(result);
     EXPECT_TRUE(std::get<0>(result.value().result) == s);
 }
