@@ -37,36 +37,6 @@ constexpr std::expected<T, std::format_error> parse_value(std::string_view view)
     return result;
 }
 
-// Поддержка спецификатора d: в исходной строке на месте плейсхолдера находится целое число.
-constexpr std::expected<int, std::format_error> parse_integral(std::string_view view) {
-    int result     = 0;
-    auto [ptr, ec] = std::from_chars(view.data(), view.data() + view.size(), result);
-    if(ec != std::errc()) {
-        return std::unexpected(std::format_error("Failed to convert into <int>."s));
-    }
-    return result;
-}
-
-// Поддержка спецификатора f: — в исходной строке на месте плейсхолдера находится число с плавающей точкой.
-constexpr std::expected<double, std::format_error> parse_floating(std::string_view view) {
-    double result  = .0;
-    auto [ptr, ec] = std::from_chars(view.data(), view.data() + view.size(), result, std::chars_format::general);
-    if(ec != std::errc()) {
-        return std::unexpected(std::format_error("Failed to convert into <double>."s));
-    }
-    return result;
-}
-
-// Поддержка спецификатора u: в исходной строке на месте плейсхолдера находится натуральное число.
-constexpr std::expected<unsigned long long, std::format_error> parse_natural(std::string_view view) {
-    unsigned long long result = 0;
-    auto [ptr, ec]            = std::from_chars(view.data(), view.data() + view.size(), result);
-    if(ec != std::errc()) {
-        return std::unexpected(std::format_error("Failed to convert into <unsigned long long>."s));
-    }
-    return result;
-}
-
 // Поддержка спецификатора s: в исходной строке на месте плейсхолдера находится строка.
 constexpr auto parse_string(std::string_view view) {
     return std::string {view};
@@ -78,7 +48,7 @@ template<typename T> constexpr std::expected<T, scan_error> process_empty_placeh
         return T {input};
     }
     else if constexpr(is_integral<T>) {
-        auto int_res = parse_integral(input);
+        auto int_res = parse_value<int>(input);
         if(!int_res) {
             return std::unexpected(
                 scan_error("Unexpected result. Failed to parse integer for {}: "s + int_res.error().what()));
@@ -113,7 +83,7 @@ template<typename T> constexpr std::expected<T, scan_error> process_empty_placeh
         return static_cast<T>(parsed_int);
     }
     else if constexpr(is_floating<T>) {
-        auto float_res = parse_floating(input);
+        auto float_res = parse_value<double>(input);
         if(!float_res) {
             return std::unexpected(
                 scan_error("Unexpected result. Failed to parse float for {}: "s + float_res.error().what()));
