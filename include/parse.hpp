@@ -26,21 +26,46 @@ template<> constexpr auto from_chars<double>(const char* first, const char* last
 
 // Поддержка целых чисел, чисел с плавающей точкой и натуральных чисел. Спецификаторы d,u,f.
 template<typename T>
-concept is_parsable = std::same_as<T, int> || std::same_as<T, long long int> || std::same_as<T, double> || std::same_as<T, unsigned long long int>;
+concept is_parsable = std::same_as<T, signed char> ||
+                      std::same_as<T, unsigned char> ||
+                      std::same_as<T, int> ||
+                      std::same_as<T, unsigned int> ||
+                      std::same_as<T, long long int> ||
+                      std::same_as<T, unsigned long long int> ||
+                      std::same_as<T, float> ||
+                      std::same_as<T, double>;
 
 template<is_parsable T> constexpr std::expected<T, std::format_error> parse_value(std::string_view view) {
     T result {};
     auto [ptr, ec] = from_chars<T>(view.data(), view.data() + view.size(), result);
 
     if(ec != std::errc()) {
-        if constexpr(std::same_as<T, int>) {
+        if constexpr(std::same_as<T, signed char>) {
+            return std::unexpected(std::format_error("Failed to convert into <signed char>."));
+        }
+        else if constexpr(std::same_as<T, unsigned char>) {
+            return std::unexpected(std::format_error("Failed to convert into <unsigned char>."));
+        }
+        else if constexpr(std::same_as<T, int>) {
             return std::unexpected(std::format_error("Failed to convert into <int>."));
+        }
+        else if constexpr(std::same_as<T, unsigned int>) {
+            return std::unexpected(std::format_error("Failed to convert into <unsigned int>."));
+        }
+        else if constexpr(std::same_as<T, long long int>) {
+            return std::unexpected(std::format_error("Failed to convert into <long long int>."));
+        }
+        else if constexpr(std::same_as<T, unsigned long long int>) {
+            return std::unexpected(std::format_error("Failed to convert into <unsigned long long int>."));
+        }
+        else if constexpr(std::same_as<T, float>) {
+            return std::unexpected(std::format_error("Failed to convert into <float>."));
         }
         else if constexpr(std::same_as<T, double>) {
             return std::unexpected(std::format_error("Failed to convert into <double>."));
         }
-        else if constexpr(std::same_as<T, unsigned long long>) {
-            return std::unexpected(std::format_error("Failed to convert into <unsigned long long>."));
+        else {
+            return std::unexpected(std::format_error("Unxpected type T failed to get converted."));
         }
     }
     return result;
@@ -102,7 +127,7 @@ template<typename T> constexpr std::expected<T, scan_error> process_empty_placeh
         // Проверка на "обрезку", если double кастуется к float (T = float, value at {%f} = double).
         if constexpr(std::is_same_v<std::remove_cv_t<T>, float>) {
             constexpr auto float_lowest = std::numeric_limits<T>::lowest();
-            constexpr auto float_max = std::numeric_limits<T>::max();
+            constexpr auto float_max    = std::numeric_limits<T>::max();
             if(parsed_double < static_cast<double>(std::numeric_limits<T>::lowest()) ||
                parsed_double > static_cast<double>(std::numeric_limits<T>::max())) {
                 return std::unexpected(
@@ -174,7 +199,8 @@ constexpr std::expected<T, scan_error> parse_value_with_format_2(std::string_vie
                 }
                 else {
                     return std::unexpected(scan_error(
-                        "Unexpected result. Type mismatch: 'u' specifier requires a natural (unsigned integer) type."s));
+                        "Unexpected result. Type mismatch: 'u' specifier requires a natural (unsigned integer)
+type."s));
                 }
             }
             case 'f': {
@@ -227,7 +253,7 @@ constexpr std::expected<T, scan_error> parse_value_with_format(std::string_view 
             }
             case 'd': {
                 if constexpr(is_integral<T>) {
-                    auto res = parse_value<int>(input);
+                    auto res = parse_value<T>(input);
                     if(!res) {
                         return std::unexpected(scan_error("Unexpected result."s + res.error().what()));
                     }
