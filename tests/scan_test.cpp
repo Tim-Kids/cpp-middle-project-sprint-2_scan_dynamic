@@ -62,6 +62,12 @@ TEST(ScanTest, ParseSingleDouble_F_Specifier) {
     EXPECT_DOUBLE_EQ(std::get<0>(result.value().result), 3.14159);
 }
 
+TEST(ScanTest, ParseSingleUint8_t_D_Specifier) {
+    auto result = stdx::scan<uint8_t>(255, "{%d}");
+    ASSERT_FALSE(result.has_value());
+    EXPECT_DOUBLE_EQ(std::get<0>(result.value().result), 255);
+}
+
 TEST(ScanTest, ParseSingleString_S_Specifier) {
     auto result = stdx::scan<std::string>("test_string", "{%s}");
     ASSERT_TRUE(result.has_value());
