@@ -104,16 +104,34 @@ TEST(ScanTest, ParseSingleUnsignedInt_U_Specifier) {
     EXPECT_EQ(std::get<0>(result.value().result), 456u);
 }
 
+TEST(ScanTest, ParseSingleUnsignedShortInt_U_Specifier) {
+    auto result = stdx::scan<unsigned short int>("65000", "{%u}");
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(std::get<0>(result.value().result), 65'000u);
+}
+
+TEST(ScanTest, ParseSingleUnsignedShortInt_U_Specifier_FAILURE) {
+    auto result = stdx::scan<unsigned short int>("65536", "{%u}");
+    ASSERT_TRUE(!result);
+    EXPECT_EQ(result.error().message, "Unexpected result.Failed to convert to <unsigned short int>.");
+}
+
 TEST(ScanTest, ParseSingleDouble_F_Specifier) {
     auto result = stdx::scan<double>("3.14159", "{%f}");
     ASSERT_TRUE(result.has_value());
     EXPECT_DOUBLE_EQ(std::get<0>(result.value().result), 3.14159);
 }
 
-TEST(ScanTest, ParseSingleInt8_t_D_Specifier) {
+TEST(ScanTest, ParseSingleInt8_t_D_Specifier_FAILURE) {
     auto result = stdx::scan<signed char>("170", "{%d}");
     ASSERT_TRUE(!result);
-    EXPECT_EQ(result.error().message, "Unexpected result.Failed to convert into <signed char>.");
+    EXPECT_EQ(result.error().message, "Unexpected result.Failed to convert to <signed char>.");
+}
+
+TEST(ScanTest, ParseSingleInt32_t_D_Specifier) {
+    auto result = stdx::scan<signed int>("-125000", "{%d}");
+    ASSERT_TRUE(result.has_value());
+    EXPECT_DOUBLE_EQ(std::get<0>(result.value().result), -125'000);
 }
 
 TEST(ScanTest, ParseSingleString_S_Specifier) {
@@ -133,7 +151,7 @@ TEST(ScanTest, ParseMultipleTypes_MixedSpecifiers) {
 }
 
 TEST(ScanTest, ParseMultipleTypes_EmptyAndSpecified) {
-    auto result = stdx::scan<std::string, int>("start 99", "{} {%d}");
+    auto result = stdx::scan<std::string, int8_t>("start 99", "{} {%d}");
     ASSERT_TRUE(result.has_value());
     EXPECT_EQ(std::get<0>(result.value().result), "start");
     EXPECT_EQ(std::get<1>(result.value().result), 99);
@@ -166,7 +184,7 @@ TEST(ScanTest, ParseWithLeadingAndTrailingText) {
 TEST(ScanTest, FailWrongSpecifierForType) {
     auto result = stdx::scan<int>("not_a_number", "{%d}");
     EXPECT_FALSE(result.has_value()) << "Scan should fail due to type mismatch";
-    EXPECT_NE(result.error().message.find("Failed to convert into <int>."), std::string::npos);
+    EXPECT_NE(result.error().message.find("Failed to convert to <int>."), std::string::npos);
 }
 
 TEST(ScanTest, FailMismatchedSpecifierCount) {
@@ -194,5 +212,5 @@ TEST(ScanTest, FailLiteralTextMismatch) {
 TEST(ScanTest, FailEmptyInputNonEmptyFormat) {
     auto result = stdx::scan<int>("", "{%d}");
     EXPECT_FALSE(result.has_value()) << "Scan should fail for empty input";
-    EXPECT_NE(result.error().message.find("Failed to convert into <int>"), std::string::npos);
+    EXPECT_NE(result.error().message.find("Failed to convert to <int>"), std::string::npos);
 }
