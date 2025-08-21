@@ -26,7 +26,7 @@ template<> constexpr auto from_chars<double>(const char* first, const char* last
 
 // Поддержка целых чисел, чисел с плавающей точкой и натуральных чисел. Спецификаторы d,u,f.
 template<typename T>
-concept is_parsable = std::same_as<T, int> || std::same_as<T, double> || std::same_as<T, unsigned long long>;
+concept is_parsable = std::same_as<T, int> || std::same_as<T, long long int> || std::same_as<T, double> || std::same_as<T, unsigned long long int>;
 
 template<is_parsable T> constexpr std::expected<T, std::format_error> parse_value(std::string_view view) {
     T result {};
@@ -57,20 +57,39 @@ template<typename T> constexpr std::expected<T, scan_error> process_empty_placeh
         return T {input};
     }
     else if constexpr(is_integral<T>) {
-        auto int_res = parse_value<int>(input);
+        auto int_res = parse_value<long long int>(input);
         if(!int_res) {
             return std::unexpected(
                 scan_error("Unexpected result. Failed to parse integer for {}: "s + int_res.error().what()));
         }
-        return int_res.value();
-    }
-    else if constexpr(is_natural<T>) {
-        auto natural_res = parse_value<unsigned long long>(input);
-        if(!natural_res) {
-            return std::unexpected(scan_error("Unexpected result. Failed to parse unsigned long long for {}: "s +
-                                              natural_res.error().what()));
+        auto parsed_int = int_res.value();
+
+        if constexpr(std::is_signed_v<std::remove_cv_t<T>>) {
+            // Проверка на "обрезку" значений малоразмерных знаковых int.
+            if constexpr(sizeof(T) < sizeof(long long int)) {  // Для int8_t, int16_t, int32_t, int64_t.
+                // Значение должно укладываться в допустимый диапазон типа.
+                if(parsed_int < static_cast<long long int>(std::numeric_limits<T>::min()) ||
+                   parsed_int > static_cast<long long int>(std::numeric_limits<T>::max())) {
+                    return std::unexpected(scan_error("Unexpected result. Integer out of range for target type {}."s));
+                }
+            }
         }
-        return natural_res.value();
+        else {  // Проверка беззнакового int.
+            // Беззнаковый тип не может быть отрицатлеьным.
+            if(parsed_int < 0) {
+                return std::unexpected(scan_error("Unexpected result. Negative value parsed for unsigned type {}."s));
+            }
+            if constexpr(sizeof(T) < sizeof(unsigned long long int)) {  // Для uint8_t, uint16_t, uint32_t, uint64_t.
+                // Значение должно укладываться в допустимый диапазон типа.
+                if(static_cast<unsigned long long int>(parsed_int) >
+                   static_cast<unsigned long long int>(std::numeric_limits<T>::max())) {
+                    return std::unexpected(
+                        scan_error("Unexpected result. Unsigned integer out of range for target type {}."s));
+                }
+            }
+        }
+        // В этой точке тип T не будет "обрезан".
+        return static_cast<T>(parsed_int);
     }
     else if constexpr(is_floating<T>) {
         auto floating_res = parse_value<double>(input);
@@ -78,12 +97,109 @@ template<typename T> constexpr std::expected<T, scan_error> process_empty_placeh
             return std::unexpected(
                 scan_error("Unexpected result. Failed to parse float for {}: "s + floating_res.error().what()));
         }
-        return floating_res.value();
+        double parsed_double = floating_res.value();
+
+        // Проверка на "обрезку", если double кастуется к float (T = float, value at {%f} = double).
+        if constexpr(std::is_same_v<std::remove_cv_t<T>, float>) {
+            constexpr auto float_lowest = std::numeric_limits<T>::lowest();
+            constexpr auto float_max = std::numeric_limits<T>::max();
+            if(parsed_double < static_cast<double>(std::numeric_limits<T>::lowest()) ||
+               parsed_double > static_cast<double>(std::numeric_limits<T>::max())) {
+                return std::unexpected(
+                    scan_error("Unexpected result. Double value out of range for float target type {}."s));
+            }
+        }
+        // В этой точке тип T не будет "обрезан".
+        return static_cast<T>(parsed_double);
     }
     else {
         return std::unexpected(scan_error("Unexpected result. Type not supported for {} placeholder."s));
     }
 }
+
+/*
+template<typename T>
+constexpr std::expected<T, scan_error> parse_value_with_format_2(std::string_view input, std::string_view fmt) {
+    // Если на внутри плейсхолдера пустая строка, то обработка данных в input на месте плейсхолдера как строки.
+    if(fmt.empty()) {
+        // Обработка данных в input на месте пустого {} placeholder.
+        return process_empty_placeholder<T>(input);
+    }
+    // Невалидный префикс спецификатор формата, либо спецификатор формата больше одного символа.
+    else if(fmt[0] == '%' && fmt.length() == 2) {
+        // Обработка спецификаторов формата.
+        switch(static_cast<unsigned char>(fmt[1])) {
+            case 's': {
+                if constexpr(isCString<T>) {
+                    return std::string {input};
+                }
+                if constexpr(isString<T> || isStringView<T>) {
+                    return parse_string(input);
+                }
+                else {
+                    return std::unexpected(
+                        scan_error("Unexpected result. Type mismatch: 's' specifier requires a string-line type."s));
+                }
+            }
+            case 'd': {
+                if constexpr(isIntegral<T>) {
+                    auto res = parse_integral(input);
+                    if(!res) {
+                        return std::unexpected(scan_error("Unexpected result."s + res.error().what()));
+                    }
+                    return res.value();
+                }
+                else {
+                    return std::unexpected(
+                        scan_error("Unexpected result. Type mismatch: 'd' specifier requires an integral type."s));
+                }
+            }
+            case 'u': {
+                if constexpr(isNatural<T>) {
+                    auto res = parse_natural(input);
+                    if(!res) {
+                        return std::unexpected(
+                            scan_error("Unexpected result. Failed to parse natural for %u: "s + res.error().what()));
+                    }
+                    // Проверка на "обрезку" при конвертации.
+                    auto parsed_ull = res.value();
+                    if constexpr(sizeof(T) < sizeof(unsigned long long)) {
+                        if(parsed_ull > static_cast<unsigned long long>(std::numeric_limits<T>::max())) {
+                            return std::unexpected(
+                                scan_error("Unexpected result. Unsigned integer out of range for target type %u."s));
+                        }
+                    }
+                    // В этой точке тип T не будет "обрезан".
+                    return static_cast<T>(parsed_ull);
+                }
+                else {
+                    return std::unexpected(scan_error(
+                        "Unexpected result. Type mismatch: 'u' specifier requires a natural (unsigned integer) type."s));
+                }
+            }
+            case 'f': {
+                if constexpr(isFloating<T>) {
+                    auto res = parse_floating(input);
+                    ;
+                    if(!res) {
+                        return std::unexpected(scan_error("Unexpected result. "s + res.error().what()));
+                    }
+                    return res.value();
+                }
+                else {
+                    return std::unexpected(
+                        scan_error("Unexpected result. Type mismatch: 'f' specifier requires a floating type."s));
+                }
+            }
+            default:
+                return std::unexpected(scan_error("Unexpected result. Unexpected format specifier."s));
+        }
+    }
+    else {
+        return std::unexpected(scan_error("Unexpected result. Wrong or too long format specifier."s));
+    }
+}
+*/
 
 // Функция для парсинга значения с учетом спецификатора формата.
 template<typename T>

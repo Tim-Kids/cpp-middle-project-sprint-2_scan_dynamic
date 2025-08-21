@@ -44,6 +44,54 @@ TEST(ScanTest, ParseSingleInt_EmptySpecifier) {
     EXPECT_EQ(std::get<0>(result.value().result), 42);
 }
 
+TEST(ScanTest, ParseSingleInt8_t_EmptySpecifier) {
+    auto result = stdx::scan<int8_t>("42", "{}");
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(std::get<0>(result.value().result), 42);
+}
+
+TEST(ScanTest, ParseSingleInt8_t_EmptySpecifier_FAILURE) {
+    auto result = stdx::scan<int8_t>("242", "{}");
+    ASSERT_TRUE(!result);
+    EXPECT_EQ(result.error().message, "Unexpected result. Integer out of range for target type {}.");
+}
+
+TEST(ScanTest, ParseSingleInt32_t_EmptySpecifier_FAILURE) {
+    auto result = stdx::scan<int>("3000000000", "{}");
+    ASSERT_TRUE(!result);
+    EXPECT_EQ(result.error().message, "Unexpected result. Integer out of range for target type {}.");
+}
+
+TEST(ScanTest, ParseSingleUint32_t_EmptySpecifier) {
+    auto result = stdx::scan<unsigned int>("3000000000", "{}");
+    ASSERT_TRUE(result);
+    EXPECT_EQ(std::get<0>(result.value().result), 3'000'000'000);
+}
+
+TEST(ScanTest, ParseSingleUint64_t_EmptySpecifier) {
+    auto result = stdx::scan<unsigned long long>("6000000000", "{}");
+    ASSERT_TRUE(result);
+    EXPECT_EQ(std::get<0>(result.value().result), 6'000'000'000);
+}
+
+TEST(ScanTest, ParseSingleFloat_EmptySpecifier) {
+    auto result = stdx::scan<float>("3.14159", "{}");
+    ASSERT_TRUE(result.has_value());
+    EXPECT_FLOAT_EQ(std::get<0>(result.value().result), 3.14159);
+}
+
+TEST(ScanTest, ParseSingleFloat_EmptySpecifier_FAILURE) {
+    auto result = stdx::scan<float>("-3.5e+38", "{}");
+    ASSERT_TRUE(!result);
+    EXPECT_EQ(result.error().message, "Unexpected result. Double value out of range for float target type {}.");
+}
+
+TEST(ScanTest, ParseSingleDouble_EmptySpecifier) {
+    auto result = stdx::scan<double>("3.0e+38", "{}");
+    ASSERT_TRUE(result.has_value());
+    EXPECT_DOUBLE_EQ(std::get<0>(result.value().result), 3.0e+38);
+}
+
 TEST(ScanTest, ParseSingleInt_D_Specifier) {
     auto result = stdx::scan<int>("-123", "{%d}");
     ASSERT_TRUE(result.has_value());
@@ -62,11 +110,11 @@ TEST(ScanTest, ParseSingleDouble_F_Specifier) {
     EXPECT_DOUBLE_EQ(std::get<0>(result.value().result), 3.14159);
 }
 
-TEST(ScanTest, ParseSingleUint8_t_D_Specifier) {
-    auto result = stdx::scan<uint8_t>(255, "{%d}");
-    ASSERT_FALSE(result.has_value());
-    EXPECT_DOUBLE_EQ(std::get<0>(result.value().result), 255);
-}
+//TEST(ScanTest, ParseSingleUint8_t_D_Specifier) {
+//    auto result = stdx::scan<uint8_t>(255, "{%d}");
+//    ASSERT_FALSE(result.has_value());
+//    EXPECT_DOUBLE_EQ(std::get<0>(result.value().result), 255);
+//}
 
 TEST(ScanTest, ParseSingleString_S_Specifier) {
     auto result = stdx::scan<std::string>("test_string", "{%s}");
