@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <print>
 
 #include "scan.hpp"
 
