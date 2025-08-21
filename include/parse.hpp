@@ -79,11 +79,6 @@ template<is_parsable T> constexpr std::expected<T, std::format_error> parse_valu
     return result;
 }
 
-// Поддержка спецификатора s: в исходной строке на месте плейсхолдера находится строка.
-constexpr auto parse_string(std::string_view view) {
-    return std::string {view};
-}
-
 template<typename T> constexpr std::expected<T, scan_error> process_empty_placeholder(std::string_view input) {
     if constexpr(std::is_constructible_v<T, std::string_view>) {
         // Поддержка std::string, std::string_view, const std::string и т.д.
@@ -167,7 +162,7 @@ constexpr std::expected<T, scan_error> parse_value_with_format(std::string_view 
                     return reinterpret_cast<const char*>(input.data());
                 }
                 if constexpr(is_string<T> || is_string_view<T>) {
-                    return parse_string(input);
+                    return std::string{input};
                 }
                 else {
                     return std::unexpected(
