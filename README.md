@@ -10,22 +10,23 @@ Template repository for the task “Dynamic `scan`: interpret data at runtime”
 
 ## Getting Started
 
-1. Click `Use this template` → `Create a new repository`.
-2. Clone your repo: `git clone your-repository-name`.
-3. Create a branch: `git switch -c development`.
-4. Open in VS Code and run `Dev Containers: Reopen in Container`.
+1. Create a new repository from this template (or fork/clone directly).
+2. Clone locally: `git clone <your-repository-url>` and `cd <repo>`.
+3. (Optional) Create a feature branch: `git switch -c development`.
 
 ## Build & Test
 
-```bash
-mkdir build && cd build
-cmake ..
-make -j4
-```
+Build with CMake:
 
 ```bash
-cd build
-ctest --verbose
+cmake -S . -B build
+cmake --build build -j
+```
+
+Run tests:
+
+```bash
+ctest --test-dir build --output-on-failure --verbose
 ```
 
 ## API
