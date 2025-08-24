@@ -213,3 +213,31 @@ TEST(ScanTest, FailEmptyInputNonEmptyFormat) {
     EXPECT_FALSE(result.has_value()) << "Scan should fail for empty input";
     EXPECT_NE(result.error().message.find("Failed to convert to <int>"), std::string::npos);
 }
+
+// --- Additional string_view and repeated literal tests ---
+
+TEST(ScanTest, ParseStringView_EmptySpecifier) {
+    auto result = stdx::scan<std::string_view>("hello world", "{}");
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(std::get<0>(result.value().result), std::string_view("hello world"));
+}
+
+TEST(ScanTest, ParseStringView_S_Specifier) {
+    auto result = stdx::scan<std::string_view>("test_string_view", "{%s}");
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(std::get<0>(result.value().result), std::string_view("test_string_view"));
+}
+
+TEST(ScanTest, ParseRepeatedLiterals_Simple) {
+    auto result = stdx::scan<int, int>("ID=1;ID=2", "ID={%d};ID={%d}");
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(std::get<0>(result.value().result), 1);
+    EXPECT_EQ(std::get<1>(result.value().result), 2);
+}
+
+TEST(ScanTest, ParseRepeatedLiterals_Words) {
+    auto result = stdx::scan<int, int>("word 42 word 7", "word {%d} word {%d}");
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(std::get<0>(result.value().result), 42);
+    EXPECT_EQ(std::get<1>(result.value().result), 7);
+}
