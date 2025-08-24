@@ -1,5 +1,11 @@
 #pragma once
 
+#include <concepts>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <type_traits>
+
 namespace stdx::details {
 
 // Концепты для проверок соответствия типов. В том числе поддержка cv-квалификаторов типов.
@@ -13,13 +19,13 @@ template<typename... T>
 concept is_floating = ((std::floating_point<std::remove_cv_t<T>>) && ...);
 
 template<typename... T>
-concept is_c_string = (std::same_as<const char*, T> && ...);
+concept is_c_string = (std::same_as<const char*, std::remove_cv_t<T>> && ...);
 
 template<typename... T>
-concept is_string = (std::same_as<std::string, T> && ...);
+concept is_string = (std::same_as<std::string, std::remove_cv_t<T>> && ...);
 
 template<typename... T>
-concept is_string_view = (std::same_as<std::string_view, T> && ...);
+concept is_string_view = (std::same_as<std::string_view, std::remove_cv_t<T>> && ...);
 
 // Класс для хранения ошибки неуспешного сканирования.
 struct scan_error {

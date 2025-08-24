@@ -5,7 +5,9 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-find_package(GTest REQUIRED)
+include(FetchContent)
+
+option(SCAN_BUILD_TESTS "Build tests" ON)
 
 set(target scan)
 
@@ -13,11 +15,21 @@ add_library(${target} INTERFACE)
 
 target_include_directories(${target} INTERFACE include/)
 
-set(test_target scan_tests)
+if(SCAN_BUILD_TESTS)
+    # GoogleTest via FetchContent ensures reproducible builds without system packages
+    FetchContent_Declare(
+        googletest
+        URL https://github.com/google/googletest/archive/refs/tags/v1.15.2.zip
+    )
+    set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
+    set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
 
-add_executable(${test_target} tests/main.cpp tests/scan_test.cpp)
-target_link_libraries(${test_target} PRIVATE ${target} GTest::GTest GTest::Main)
+    set(test_target scan_tests)
+    add_executable(${test_target} tests/main.cpp tests/scan_test.cpp)
+    target_link_libraries(${test_target} PRIVATE ${target} GTest::gtest GTest::gtest_main)
 
-# Включаем тестирование
-enable_testing()
-add_test(NAME ${test_target} COMMAND ${PROJECT_NAME}_tests)
+    # Включаем тестирование
+    enable_testing()
+    add_test(NAME ${test_target} COMMAND ${test_target})
+endif()

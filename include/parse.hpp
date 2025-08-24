@@ -1,6 +1,10 @@
 #pragma once
 
+#include <charconv>
+#include <concepts>
 #include <expected>
+#include <format>
+#include <type_traits>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -161,9 +165,13 @@ constexpr std::expected<T, scan_error> parse_value_with_format(std::string_view 
                 if constexpr(is_c_string<T>) {
                     return reinterpret_cast<const char*>(input.data());
                 }
-                if constexpr(is_string<T> || is_string_view<T>) {
-                    return std::string{input};
+                if constexpr(is_string_view<T>) {
+                    return static_cast<T>(input);
                 }
+                if constexpr(is_string<T>) {
+                    return T{input};
+                }
+                // Intentionally drop C-string support to avoid dangling/non-null-terminated slices
                 else {
                     return std::unexpected(
                         scan_error("Unexpected result. Type mismatch: 's' specifier requires a string-line type."s));
@@ -199,11 +207,18 @@ constexpr std::expected<T, scan_error> parse_value_with_format(std::string_view 
             case 'f': {
                 if constexpr(is_floating<T>) {
                     auto res = parse_value<double>(input);
-                    ;
                     if(!res) {
                         return std::unexpected(scan_error("Unexpected result. "s + res.error().what()));
                     }
-                    return res.value();
+                    double parsed_double = res.value();
+                    if constexpr(std::is_same_v<std::remove_cv_t<T>, float>) {
+                        if(parsed_double < static_cast<double>(std::numeric_limits<T>::lowest()) ||
+                           parsed_double > static_cast<double>(std::numeric_limits<T>::max())) {
+                            return std::unexpected(
+                                scan_error("Unexpected result. Double value out of range for float target type {}."s));
+                        }
+                    }
+                    return static_cast<T>(parsed_double);
                 }
                 else {
                     return std::unexpected(

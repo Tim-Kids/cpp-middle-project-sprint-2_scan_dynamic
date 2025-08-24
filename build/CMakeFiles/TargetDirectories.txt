@@ -1,0 +1,12 @@
+/workspace/build/CMakeFiles/scan_tests.dir
+/workspace/build/CMakeFiles/test.dir
+/workspace/build/CMakeFiles/edit_cache.dir
+/workspace/build/CMakeFiles/rebuild_cache.dir
+/workspace/build/_deps/googletest-build/CMakeFiles/test.dir
+/workspace/build/_deps/googletest-build/CMakeFiles/edit_cache.dir
+/workspace/build/_deps/googletest-build/CMakeFiles/rebuild_cache.dir
+/workspace/build/_deps/googletest-build/googletest/CMakeFiles/gtest.dir
+/workspace/build/_deps/googletest-build/googletest/CMakeFiles/gtest_main.dir
+/workspace/build/_deps/googletest-build/googletest/CMakeFiles/test.dir
+/workspace/build/_deps/googletest-build/googletest/CMakeFiles/edit_cache.dir
+/workspace/build/_deps/googletest-build/googletest/CMakeFiles/rebuild_cache.dir
