@@ -43,27 +43,27 @@ cd build
 ctest --verbose
 ```
 
-## scan<Ts...>: key capabilities
+## scan<Ts...>: ключевые возможности
 
-The header-only library exposes a compile-time templated function `scan<Ts...>(std::string_view input, std::string_view format)` that interprets runtime strings and extracts typed values into a tuple. The API is safe-by-default and returns `std::expected<details::scan_result<Ts...>, details::scan_error>`.
+Библиотека header-only предоставляет compile-time template-функцию `scan<Ts...>(std::string_view input, std::string_view format)`, которая интерпретирует runtime-строку и извлекает типизированные значения в `std::tuple`. API по умолчанию безопасен и возвращает `std::expected<details::scan_result<Ts...>, details::scan_error>`.
 
-- Supported target types:
-  - Integers: `signed char`, `unsigned char`, `short int`, `unsigned short int`, `int`, `unsigned int`, `long long int`, `unsigned long long int`
-  - Floating point: `float`, `double`
-  - Strings: `std::string`, `std::string_view`, `const char*`
-- Supported placeholders in the `format` string:
-  - `{}`: empty placeholder. The input slice is interpreted based on the target type `T`.
-  - `{%s}`: string placeholder. Allowed targets: `std::string`, `std::string_view`, `const char*`.
-  - `{%d}`: signed integer placeholder. Allowed targets: any signed integral type.
-  - `{%u}`: unsigned integer placeholder. Allowed targets: any unsigned integral type.
-  - `{%f}`: floating placeholder. Allowed targets: `float`, `double`.
-- Literal text outside placeholders must match the input exactly. Placeholders are processed in order and mapped to `T...`.
+- Поддерживаемые целевые типы:
+  - Целые: `signed char`, `unsigned char`, `short int`, `unsigned short int`, `int`, `unsigned int`, `long long int`, `unsigned long long int`
+  - С плавающей точкой: `float`, `double`
+  - Строковые: `std::string`, `std::string_view`, `const char*`
+- Поддерживаемые placeholders в строке `format`:
+  - `{}`: пустой placeholder. Фрагмент входной строки интерпретируется в зависимости от целевого типа `T`.
+  - `{%s}`: строковый placeholder. Допустимые цели: `std::string`, `std::string_view`, `const char*`.
+  - `{%d}`: placeholder знакового целого. Допустимые цели: любой знаковый integral-тип.
+  - `{%u}`: placeholder беззнакового целого. Допустимые цели: любой беззнаковый integral-тип.
+  - `{%f}`: placeholder числа с плавающей точкой. Допустимые цели: `float`, `double`.
+- Литералы вне placeholders должны в точности совпадать с входной строкой. Placeholders обрабатываются по порядку и сопоставляются с `T...`.
 
-Return type details:
-- On success: `scan` returns `{ .result = std::tuple<Ts...> }` wrapped in `std::expected`.
-- On failure: `scan` returns `std::unexpected(scan_error{message})` with a descriptive message.
+Детали возвращаемого значения:
+- Успех: `scan` возвращает `{ .result = std::tuple<Ts...> }` в обертке `std::expected`.
+- Ошибка: `scan` возвращает `std::unexpected(scan_error{message})` с описательным сообщением.
 
-## Basic examples
+## Базовые примеры
 
 ```cpp
 #include "scan.hpp"
@@ -91,39 +91,39 @@ auto r5 = stdx::scan<float>("3.14159", "{}");
 // r5->result == std::tuple{3.14159f}
 ```
 
-## Restrictions and error messages
+## Ограничения и сообщения об ошибках
 
-The function performs strict validation and returns failures with `scan_error{message}` in these situations (non-exhaustive):
+Функция выполняет строгую валидацию и возвращает ошибки через `scan_error{message}` в следующих случаях (не исчерпывающий список):
 
-- Mismatched arity:
-  - Message: `"Unexpected result. Mismatched number of format specifiers and target types"`
-  - When the count of `{...}` in `format` differs from the number of template types `T...`.
+- Несоответствие количества аргументов:
+  - Сообщение: `"Unexpected result. Mismatched number of format specifiers and target types"`
+  - Когда число `{...}` в `format` отличается от числа template-типов `T...`.
 
-- Literal text mismatch between `input` and `format`:
-  - Message: `"Unexpected result. Unformatted text in input and format string are different"`
-  - Any static text outside placeholders must match exactly.
+- Несовпадение литерального текста между `input` и `format`:
+  - Сообщение: `"Unexpected result. Unformatted text in input and format string are different"`
+  - Любой статический текст вне placeholders должен совпадать точно.
 
-- Wrong or unknown format specifier:
-  - Message: `"Unexpected result. Wrong or too long format specifier."` or `"Unexpected result. Unexpected format specifier."`
+- Неверный или неизвестный format specifier:
+  - Сообщение: `"Unexpected result. Wrong or too long format specifier."` или `"Unexpected result. Unexpected format specifier."`
 
-- Type mismatch for specifiers:
-  - For `%d` with a non-signed integral target: `"Unexpected result. Type mismatch: 'd' specifier requires an integral type."`
-  - For `%u` with a non-unsigned integral target: `"Unexpected result. Type mismatch: 'u' specifier requires a natural (unsigned integer) type."`
-  - For `%s` with a non-string-like target: `"Unexpected result. Type mismatch: 's' specifier requires a string-line type."`
-  - For `%f` with a non-floating target: `"Unexpected result. Type mismatch: 'f' specifier requires a floating type."`
+- Несоответствие типов для specifiers:
+  - Для `%d` с не-знаковым integral-типом: `"Unexpected result. Type mismatch: 'd' specifier requires an integral type."`
+  - Для `%u` с не-беззнаковым integral-типом: `"Unexpected result. Type mismatch: 'u' specifier requires a natural (unsigned integer) type."`
+  - Для `%s` с не-строковым типом: `"Unexpected result. Type mismatch: 's' specifier requires a string-line type."`
+  - Для `%f` с не-floating типом: `"Unexpected result. Type mismatch: 'f' specifier requires a floating type."`
 
-- Conversion failures (numeric parsing):
-  - Messages include: `"Unexpected result.Failed to convert to <int>."`, `"Unexpected result.Failed to convert to <unsigned short int>."`, etc.
-  - Triggered when the substring cannot be parsed as the requested numeric type.
+- Ошибки конверсии (numeric parsing):
+  - Примеры сообщений: `"Unexpected result.Failed to convert to <int>."`, `"Unexpected result.Failed to convert to <unsigned short int>."` и др.
+  - Возникают, если подстрока не может быть распознана как требуемый числовой тип.
 
-- Range checks for empty `{}` numeric captures:
-  - Signed integer out of range: `"Unexpected result. Integer out of range for target type {}."`
-  - Unsigned integer negative value: `"Unexpected result. Negative value parsed for unsigned type {}."`
-  - Unsigned integer out of range: `"Unexpected result. Unsigned integer out of range for target type {}."`
+- Проверки диапазонов для пустого `{}` при числах:
+  - Выход за диапазон для знакового целого: `"Unexpected result. Integer out of range for target type {}."`
+  - Отрицательное значение для беззнакового типа: `"Unexpected result. Negative value parsed for unsigned type {}."`
+  - Выход за диапазон для беззнакового целого: `"Unexpected result. Unsigned integer out of range for target type {}."`
 
-- Range checks for `%f` into `float`:
-  - Double-to-float narrowing out of range: `"Unexpected result. Double value out of range for float target type {}."`
+- Проверки диапазонов для `%f` в `float`:
+  - Сужение `double -> float` вне диапазона: `"Unexpected result. Double value out of range for float target type {}."`
 
-Notes on string outputs:
-- `std::string_view` returns a view into the original input buffer. Ensure the source string outlives the view.
-- `const char*` points into the original buffer and may not be NUL-terminated. Prefer `std::string`/`std::string_view` for safety unless you control downstream usage.
+Примечания по строковым типам:
+- `std::string_view` возвращает view во входной буфер. Убедитесь, что исходная строка живет дольше view.
+- `const char*` указывает на исходный буфер и может не иметь NUL-терминатора. Для безопасности предпочтительнее `std::string`/`std::string_view`, если вы не контролируете дальнейшее использование.
