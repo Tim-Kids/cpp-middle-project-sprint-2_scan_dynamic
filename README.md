@@ -48,10 +48,36 @@ Returns `std::tuple<Ts...>` on success, or `scan_error` with a message on failur
 ## Examples
 
 ```cpp
+// 1) Empty placeholder -> string
+// input:  "hello world"
+// format: "{}"
+// result: std::tuple{ std::string{"hello world"} }
 auto a = stdx::scan<std::string>("hello world", "{}");
+
+// 2) Mixed types with literals
+// input:  "ID: 123 Name: Smith Score: 2.5"
+// format: "ID: {%d} Name: {%s} Score: {%f}"
+// result: std::tuple{ 123, std::string{"Smith"}, 2.5 }
 auto b = stdx::scan<int, std::string, double>(
     "ID: 123 Name: Smith Score: 2.5", "ID: {%d} Name: {%s} Score: {%f}");
+
+// 3) string_view capture
+// input:  "test_string_view"
+// format: "{%s}"
+// result: std::tuple{ std::string_view{"test_string_view"} }
 auto c = stdx::scan<std::string_view>("test_string_view", "{%s}");
+
+// 4) Unsigned integer
+// input:  "456"
+// format: "{%u}"
+// result: std::tuple{ 456u }
+auto d = stdx::scan<unsigned int>("456", "{%u}");
+
+// 5) Float via empty placeholder (range-checked for float width)
+// input:  "3.14159"
+// format: "{}"
+// result: std::tuple{ 3.14159f }
+auto e = stdx::scan<float>("3.14159", "{}");
 ```
 
 ## Constraints

@@ -4,10 +4,7 @@
 
 // --- Single Type Tests ---
 
-TEST(ScanTest, EmptyFormatSpecifier) {
-    auto result = stdx::scan<std::string>("string", "{}");
-    ASSERT_TRUE(result);
-}
+// Removed duplicate of ParseSingleString_EmptySpecifier
 
 TEST(ScanTest, WrongFormatSpecifier) {
     auto result = stdx::scan<std::string>("wrong format specifier", "{s}");
@@ -21,10 +18,7 @@ TEST(ScanTest, CStringTypeTest) {
     EXPECT_TRUE(std::get<0>(result.value().result) == s);
 }
 
-TEST(ScanTest, StringSpecifierTest) {
-    auto result = stdx::scan<std::string>("lovely string", "{%s}");
-    EXPECT_TRUE(result);
-}
+// Removed duplicate of ParseSingleString_S_Specifier
 
 TEST(ScanTest, DoubleStringSpecifierTest) {
     auto result = stdx::scan<std::string, std::string>("lovely string makes love", "{} string makes {%s}");
@@ -127,11 +121,7 @@ TEST(ScanTest, ParseSingleInt8_t_D_Specifier_FAILURE) {
     EXPECT_EQ(result.error().message, "Unexpected result.Failed to convert to <signed char>.");
 }
 
-TEST(ScanTest, ParseSingleInt32_t_D_Specifier) {
-    auto result = stdx::scan<signed int>("-125000", "{%d}");
-    ASSERT_TRUE(result.has_value());
-    EXPECT_DOUBLE_EQ(std::get<0>(result.value().result), -125'000);
-}
+// Removed duplicate of ParseSingleInt_D_Specifier
 
 TEST(ScanTest, ParseSingleString_S_Specifier) {
     auto result = stdx::scan<std::string>("test_string", "{%s}");
@@ -240,4 +230,50 @@ TEST(ScanTest, ParseRepeatedLiterals_Words) {
     ASSERT_TRUE(result.has_value());
     EXPECT_EQ(std::get<0>(result.value().result), 42);
     EXPECT_EQ(std::get<1>(result.value().result), 7);
+}
+
+// --- Additional edge cases ---
+
+TEST(ScanTest, ConsecutiveEmptyPlaceholders_Fails) {
+    auto result = stdx::scan<std::string, std::string>("ab", "{}{}");
+    EXPECT_FALSE(result.has_value());
+    EXPECT_NE(result.error().message.find("Index out of bounds during tuple population."), std::string::npos);
+}
+
+TEST(ScanTest, UnsignedSpecifierWithNegative_Fails) {
+    auto result = stdx::scan<unsigned int>("-5", "{%u}");
+    EXPECT_FALSE(result.has_value());
+    EXPECT_NE(result.error().message.find("Failed to convert to <unsigned int>"), std::string::npos);
+}
+
+TEST(ScanTest, StringSpecifierTypeMismatch_Fails) {
+    auto result = stdx::scan<int>("word", "{%s}");
+    EXPECT_FALSE(result.has_value());
+    EXPECT_NE(result.error().message.find("Type mismatch: 's' specifier requires a string-line type."),
+              std::string::npos);
+}
+
+TEST(ScanTest, FloatSpecifierRange_Fails) {
+    auto result = stdx::scan<float>("-3.5e+38", "{%f}");
+    EXPECT_FALSE(result.has_value());
+    EXPECT_NE(result.error().message.find("Double value out of range for float target type {}."),
+              std::string::npos);
+}
+
+TEST(ScanTest, TooLongSpecifier_Fails) {
+    auto result = stdx::scan<int>("42", "{%dd}");
+    EXPECT_FALSE(result.has_value());
+    EXPECT_NE(result.error().message.find("Wrong or too long format specifier."), std::string::npos);
+}
+
+TEST(ScanTest, EmptyInputWithEmptyPlaceholder_String) {
+    auto result = stdx::scan<std::string>("", "{}");
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(std::get<0>(result.value().result), "");
+}
+
+TEST(ScanTest, LeadingWhitespace_D_Fails) {
+    auto result = stdx::scan<int>(" 42", "{%d}");
+    EXPECT_FALSE(result.has_value());
+    EXPECT_NE(result.error().message.find("Failed to convert to <int>"), std::string::npos);
 }
